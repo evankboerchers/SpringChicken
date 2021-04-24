@@ -1,0 +1,32 @@
+ext {
+
+    // Code quality tools - dynamic versions to ensure newest tool version is used and not the plugin's default version
+    checkstyleToolVersion = '8.+'
+    spotbugsContribVersion = '7.4.7'
+    findbugsSlf4jVersion = '1.+'
+    jcipVersion = '1.0'
+    spotBugsToolVersion = '4.2.0'
+
+    // Testing
+    junitJupiterVersion = '5.7.0'
+
+    // Logging
+    groovyVersion = '3.0.7'
+    janinoVersion = '3.1.2'
+    logbackVersion = '1.2.3'
+    ravenLogbackVersion = '8.0.3'
+}
+
+dependencies {
+
+    /* SpotBugs annotations */
+    compileOnly "net.jcip:jcip-annotations:$jcipVersion"
+    compileOnly "com.github.spotbugs:spotbugs-annotations:$spotBugsToolVersion"
+    testCompileOnly "com.github.spotbugs:spotbugs-annotations:$spotBugsToolVersion"
+
+    /* Dependencies used only for Test execution */
+    // JUnit Jupiter API and TestEngine implementation
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
+}

@@ -1,0 +1,26 @@
+# Intellij
+.idea/*
+*.iml
+
+# Vscode
+.classpath
+.project
+.settings
+.vscode
+
+# Gradle
+.gradle/*
+
+*/build/*
+*/bin/*
+*/out/*
+*/logs/*
+
+# Logs
+logs/
+
+# Java generated files
+package-info.java
+
+BUILDTIMESTAMP.txt
+COMMITHASH.txt

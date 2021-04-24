@@ -1,0 +1,132 @@
+/**
+ *  File: nonnull.gradle
+ *
+ *  Generates package-info.java for appropriate packages
+ *  inside src/main/java folder.
+ *
+ *  This is a workaround to define @ParametersAreNonnullByDefault for all Java classes in a package
+ *  i.e. including all subpackages (note: edit line no. 19).
+ *  Based on https://gist.github.com/kosiara/233753e4de606eb5bd8b342209090e25
+ */
+apply plugin: 'base'
+
+task generateNonnullJavaFiles() {
+    doFirst {
+        group = "Copying"
+        description = "Generate package-info.java classes"
+
+        def infoFileContentHeader = getFileContentHeader()
+        def infoFileContentFooter = getFileContentFooter()
+
+        def fileList = getFileList()
+
+        fileList.each { filePath ->
+            if (!file(filePath[1]).exists()) {
+                def infoFileContentPackage = getFileContentPackage(filePath[0])
+                new File(filePath[1]).write(infoFileContentHeader +
+                        infoFileContentPackage + infoFileContentFooter)
+                println "[dir] " + filePath[1] + " created"
+            }
+        }
+        println "[SUCCESS] Nonnull generator: package-info.java files checked"
+    }
+}
+
+// These two dependencies generate the files before the source sets are parsed
+compileJava.dependsOn generateNonnullJavaFiles
+compileTestJava.dependsOn generateNonnullJavaFiles
+tasks.spotbugsMain.dependsOn generateNonnullJavaFiles
+tasks.spotbugsTest.dependsOn generateNonnullJavaFiles
+
+clean.doLast {
+    getFileList().each { filePath ->
+        delete filePath[1]
+    }
+    println "[SUCCESS] Nonnull generator: package-info.java files cleaned"
+}
+
+def getFileList() {
+    def filePaths = []
+    allprojects.each { prj ->
+        def srcDirs = prj.sourceSets.main.allJava.srcDirs
+        srcDirs.each { srcDir ->
+            // Need to filter out non-existent folders which can happen with source sets
+            if (srcDir.exists()) {
+                srcDir.eachDirRecurse { dir ->
+                    // Only add package-info to packages containing java files to cut down on clutter
+                    files { dir.listFiles() }.find { file ->
+                        if (file.name.endsWith(".java")) {
+                            filePaths.add([dir.getAbsolutePath(), dir.getAbsolutePath() + "/package-info.java"])
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return filePaths
+}
+
+static def getFileContentImport(path, fileName) {
+    def mainSrcPhrase = "src/main/java/".replace("/", File.separator)
+    def mainSrcPhraseIndex = path.indexOf(mainSrcPhrase)
+    def output = path.substring(mainSrcPhraseIndex)
+
+    // Replace both Unix and Windows separators
+    return "import " + output.replace(mainSrcPhrase, "")
+            .replace("/", ".").replace("\\", ".") + "." + fileName + ";\n"
+}
+
+static def getFileContentPackage(path) {
+    def mainSrcPhrase = "src/main/java/".replace("/", File.separator)
+    def mainSrcPhraseIndex = path.indexOf(mainSrcPhrase)
+    def output = path.substring(mainSrcPhraseIndex)
+
+    // Replace both Unix and Windows separators
+    return "package " + output.replace(mainSrcPhrase, "")
+            .replace("/", ".").replace("\\", ".") + ";\n"
+}
+
+
+static def getFileContentHeader() {
+    return "/**\n" +
+            " *\n" +
+            " * Make all method parameters, return values, and class fields @Nonnull by default.\n" +
+            " *\n" +
+            " * e.g.\n" +
+            " *\n" +
+            " * class MyNonnullClass {\n" +
+            " *   private String foo;\n" +
+            " *   MyNonnullClass(String foo) { this.foo = foo; }\n" +
+            " *   String trimExampleMethod(String value) {\n" +
+            " *       return value.trim();\n" +
+            " *   }\n" +
+            " * }\n" +
+            " *\n" +
+            " * is equal to:\n" +
+            " *\n" +
+            " * class MyNonnullClass {\n" +
+            " *   @Nonnull private String foo;\n" +
+            " *   MyNonnullClass(@Nonnull String foo) { this.foo = foo; }\n" +
+            " *   @Nonnull String trimExampleMethod(@Nonnull String value) {\n" +
+            " *       return value.trim();\n" +
+            " *   }\n" +
+            " * }\n" +
+            " *\n" +
+            " * reverse this behaviour with: @CheckForNull annotation like.\n" +
+            " *\n" +
+            " * public void boo(final String key, @CheckForNull final String value)\n" +
+            " * {\n" +
+            " *   ...\n" +
+            " *\n" +
+            " */\n" +
+            "@ParametersAreNonnullByDefault\n" +
+            "@ReturnValuesAreNonnullByDefault\n" +
+            "@FieldsAreNonnullByDefault\n"
+}
+
+static def getFileContentFooter() {
+    return ["\nimport javax.annotation.ParametersAreNonnullByDefault;\n",
+            "import com.springchicken.FieldsAreNonnullByDefault;\n",
+            "import com.springchicken.ReturnValuesAreNonnullByDefault;\n"].join("")
+}

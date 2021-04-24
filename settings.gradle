@@ -1,0 +1,6 @@
+rootProject.name = 'springchicken'
+include 'presentation'
+include 'infrastructure'
+include 'business_logic'
+include 'main'
+

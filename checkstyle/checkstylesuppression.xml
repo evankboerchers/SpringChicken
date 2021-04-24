@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC "-//Puppy Crawl//DTD Suppressions 1.1//EN"
+        "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
+<suppressions>
+    <suppress files="Proto\.java$" checks="Javadoc*"/>
+    <suppress files="Proto\.java$" checks="[a-zA-Z0-9]*"/>
+    <suppress files="[\\/]proto[\\/]" checks="Javadoc*"/>
+    <suppress files="[\\/]test[\\/]" checks="Javadoc*|MagicNumber*"/>
+    <suppress files="[\\/]functionaltest[\\/]" checks="Javadoc*|MagicNumber*"/>
+    <suppress files="[\\/]generated-sources[\\/]" checks="[a-zA-Z0-9]"/>
+    <suppress files="[\\/]jooq[\\/]" checks="[a-zA-Z0-9]"/>
+    <suppress files="package-info.java" checks="RedundantImport"/>
+</suppressions>

@@ -1,0 +1,186 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'org.jfrog.buildinfo:build-info-extractor-gradle:4.18.3'
+    }
+}
+
+plugins {
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+    id 'com.github.spotbugs' version '4.6.0'
+
+}
+
+wrapper {
+    gradleVersion = '6.7'
+}
+
+version = rootProject.file('VERSION.txt').exists() ?  rootProject.file('VERSION.txt').text.trim() : 'UNKNOWN'
+
+project.ext.set("commitHash", 'git rev-parse HEAD'.execute().text.trim())
+
+allprojects {
+    group = 'com'
+
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'java-library'
+    apply from: "$rootDir/commonDependencies.gradle"
+    compileJava.sourceCompatibility = ext['javaVersion']
+    compileJava.targetCompatibility = ext['javaVersion']
+    compileJava.options.encoding = 'UTF-8'
+    compileTestJava.options.encoding = 'UTF-8'
+
+    apply plugin: 'checkstyle'
+    apply plugin: 'com.github.spotbugs'
+    apply plugin: 'jacoco'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom('org.springframework.boot:spring-boot-dependencies:2.4.2') {
+                bomProperties([
+                        'jooq.version': '3.13.5'
+                ])
+            }
+        }
+    }
+
+    checkstyle {
+        configFile = rootProject.file('checkstyle/checkstyle.xml').absolutePath as File
+        configDirectory = rootProject.file('checkstyle').absolutePath as File
+        toolVersion = "$checkstyleToolVersion"
+    }
+
+    spotbugs {
+        toolVersion = "$spotBugsToolVersion"
+        reportLevel = "low"
+        ignoreFailures = false
+        excludeFilter = file("$rootProject.projectDir/spotbugsExclude.xml")
+        dependencies {
+            spotbugsPlugins "jp.skypencil.findbugs.slf4j:bug-pattern:$findbugsSlf4jVersion@jar"
+            spotbugsPlugins "com.mebigfatguy.sb-contrib:sb-contrib:$spotbugsContribVersion@jar"
+        }
+    }
+
+    spotbugsMain {
+        reports {
+            html {
+                enabled = true
+                destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
+                stylesheet = 'fancy-hist.xsl'
+            }
+        }
+    }
+
+    spotbugsTest {
+        reports {
+            html {
+                enabled = true
+                destination = file("$buildDir/reports/spotbugs/test/spotbugs.html")
+                stylesheet = 'fancy-hist.xsl'
+            }
+        }
+    }
+
+    test {
+        useJUnitPlatform {
+            includeEngines 'junit-jupiter', 'junit-vintage'
+            excludeTags 'slow'
+        }
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+}
+check.dependsOn jacocoTestReport
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                counter = 'INSTRUCTION'
+                minimum = 0.00
+            }
+            limit {
+                counter = 'BRANCH'
+                minimum = 0.00
+            }
+            limit {
+                counter = 'LINE'
+                minimum = 0.00
+            }
+            limit {
+                counter = 'COMPLEXITY'
+                minimum = 0.00
+            }
+            limit {
+                counter = 'METHOD'
+                minimum = 0.00
+            }
+            limit {
+                counter = 'CLASS'
+                minimum = 0.00
+            }
+        }
+    }
+}
+check.dependsOn jacocoTestCoverageVerification
+
+subprojects {
+    version = rootProject.version
+}
+
+
+/* --------------------------------------------------------------- */
+/* Components */
+project(':main') {
+    dependencies {
+        // This structure is specific and intentionally setup this way. If you think you need to change it,
+        // there is very likely an error in what you are trying to do
+        implementation project(':business_logic')
+        api project(':infrastructure')
+        api project(':presentation')
+    }
+}
+project(':presentation') {
+    dependencies {
+        // This structure is specific and intentionally setup this way. If you think you need to change it,
+        // there is very likely an error in what you are trying to do
+        api project(':business_logic')
+    }
+}
+project(':infrastructure') {
+    dependencies {
+        // This structure is specific and intentionally setup this way. If you think you need to change it,
+        // there is very likely an error in what you are trying to do
+        api project(':business_logic')
+
+        testImplementation files(project(':business_logic').sourceSets.test.output.classesDirs)
+    }
+}
+project(':business_logic') {
+    dependencies {
+        // This structure is specific and intentionally setup this way. If you think you need to change it,
+        // there is very likely an error in what you are trying to do
+    }
+}
+
+
+
+
+// Comment following line to disable checking parameters for null-ness by default
+// Intentionally at the bottom of the file after the other projects have been evaluated
+apply from: 'spotbugsNonnull.gradle'
+
